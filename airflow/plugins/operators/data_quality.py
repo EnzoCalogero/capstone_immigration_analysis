@@ -6,7 +6,18 @@ from airflow.utils.decorators import apply_defaults
 class DataQualityOperator(BaseOperator):
 
     ui_color = '#89DA59'
-    tables = ('artists', 'users', 'songs', 'time', 'songplays')
+    tables = ('country_life_quality',
+        'country_property_cost',
+        'airlines',
+        'airports',
+        'cities',
+        'country_cost',
+        'country_age',
+        'country_life_quality',
+        'country_crime',
+        'country_pupolation',
+        'country_health'
+         )
 
     @apply_defaults
     def __init__(
