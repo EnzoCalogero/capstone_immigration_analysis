@@ -6,7 +6,7 @@ from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.contrib.hooks.aws_hook import AwsHook
 
-from airflow.operators import (StageToRedshiftOperator,  LoadFactOperator,
+from airflow.operators import (StageToRedshiftOperator,  LoadFactOperator, StageToRedshiftOperatorparque,
                                 LoadDimensionOperator, StageToRedshiftOperatorcsv,  DataQualityOperator)
 from airflow.operators.python_operator import PythonOperator
 from helpers import SqlQueries
@@ -281,7 +281,7 @@ def clean_country_dict(bucket, filename_source, filename_dest):
     
 default_args = {
     'owner': 'udacity',
-    'start_date':datetime(2020,5,31), 
+    'start_date':datetime(2020,6,2), 
     'depends_on_past': False,
     'retries': 3, 
     'retry_delay': timedelta(minutes=2),
@@ -320,6 +320,8 @@ airport_dict = PythonOperator(
     python_callable=airport_dict,
     op_kwargs={'bucket':'immigration-us-1','filename_source':'raw_data/airport_dict.csv', 'filename_dest':'airport_dict.csv' }
    )
+
+
 
 cleaning_airlines = PythonOperator(
     task_id='cleaning_airlines',
@@ -393,6 +395,17 @@ clean_country_dict = PythonOperator(
     op_kwargs={'bucket':'immigration-us-1','filename_source':'raw_data/country_dict.csv', 'filename_dest':'country_dict.csv' }
                #op_kwargs={'keyword_argument':'which will be passed to function'}
     )
+
+
+immigration_to_redshift = StageToRedshiftOperatorparque(  ## Change...
+    task_id='immigration',
+    dag=dag,
+    redshift_conn_id="redshift",
+    aws_credentials_id="aws_credentials",
+    table="immigration",
+    s3_source="s3://immigration-us-1/sas_data_ready_to_use/",
+    )
+
 
 
 airlines_to_redshift = StageToRedshiftOperatorcsv(
@@ -531,10 +544,12 @@ run_quality_checks = DataQualityOperator(
     "select  count(*) from airlines":1008,
     "select  count(*) from airports":556,
     "select count(*) from cities":112,
-    "SELECT COUNT(*) FROM  country_pupolation":182
+    "SELECT COUNT(*) FROM  country_pupolation":182,
+    "select count(distinct(cit_country)) from immigration":210    
     },
     tables=(
         'country_life_quality',
+        'immigration',
         'country_property_cost',
         'airlines',
         'airports',
@@ -556,6 +571,8 @@ end_operator = DummyOperator(task_id='Stop_execution',
 
 start_operator >> clean_country_dict
 start_operator >> airport_dict
+start_operator >> immigration_to_redshift
+
 
 clean_country_dict >> clear_population
 clean_country_dict >> clear_cost
@@ -575,27 +592,25 @@ cleaning_property_cost >> country_property_cost_to_redshift
 cleaning_life_quality >> country_life_quality_to_redshift
 
 start_operator >> cleaning_airlines
+
 cleaning_airlines >> airlines_to_redshift
-
 cleaning_airports >> airports_to_redshift
-
 airlines_to_redshift >> run_quality_checks
 country_age_to_redshift >> run_quality_checks
 cleaning_cities >> cities_to_redshift
 
 cities_to_redshift >> run_quality_checks
-
 airports_to_redshift >> run_quality_checks
-
 country_cost_to_redshift >> run_quality_checks
 country_crime_to_redshift >> run_quality_checks
 country_health_to_redshift >> run_quality_checks
 country_life_quality_to_redshift >> run_quality_checks
 country_pupolationn_to_redshift  >> run_quality_checks
 country_property_cost_to_redshift >> run_quality_checks
+immigration_to_redshift >> run_quality_checks
 
 airport_dict >> cleaning_airports
 cleaning_airports>> cleaning_cities
-#cleaning_cities >> end_operator
+
 run_quality_checks >> end_operator
 

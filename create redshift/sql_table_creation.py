@@ -30,15 +30,14 @@ CREATE TABLE immigration
     i94mon int4,
     
   	i94port varchar(6),
+    arrdate TIMESTAMP,
 	biryear int4, 
 	gender varchar(6),
     visatype varchar(6),
 	airline varchar(6),
 	cit_country varchar(256),
     res_country varchar(256),
-    Visa_Type varchar(256),
-    arrival_date TIMESTAMP
-        
+    Visa_Type varchar(256)        
 )
 """)
 
@@ -127,7 +126,7 @@ country_pupolation_table_create= ("""
 CREATE TABLE country_pupolation 
 (
   	country varchar(256) PRIMARY KEY,
-    area_km2 float4,
+    area_km2 varchar(12),
     population varchar(12),
     density varchar(12)
 	)

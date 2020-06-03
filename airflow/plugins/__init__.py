@@ -11,6 +11,7 @@ class UdacityPlugin(AirflowPlugin):
     operators = [
         operators.StageToRedshiftOperator,
         operators.StageToRedshiftOperatorcsv,
+        operators.StageToRedshiftOperatorparque,
         operators.LoadFactOperator,
         operators.LoadDimensionOperator,
         operators.DataQualityOperator
